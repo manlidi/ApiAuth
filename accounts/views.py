@@ -41,22 +41,13 @@ def user_login(request):
         username = request.data.get('username')
         password = request.data.get('password')
 
-        user = None
-        if '@' in username:
-            try:
-                user = CustomUser.objects.get(email=username)  
-            except ObjectDoesNotExist:
-                pass
+        user = authenticate(username=username, password=password)
 
-        if not user:
-            user = authenticate(username=username, password=password)
-
-        if user:
-            token = Token.objects.get_or_create(user=user)
-            return Response({'token': token.key}, status=status.HTTP_200_OK)
-
-        return Response({'error': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
-    
+        if user is not None:
+            token, created = Token.objects.get_or_create(user=user)
+            return Response({'token': token.key, 'user_id': user.username}, status=status.HTTP_200_OK)
+        else:
+            return Response({'error': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
